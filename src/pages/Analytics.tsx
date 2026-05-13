@@ -41,16 +41,42 @@ export default function AnalyticsPage() {
   if (error) return <div className="flex items-center justify-center h-full text-rose-500 font-bold">{error}</div>;
   if (!data) return <div className="flex items-center justify-center h-full text-slate-400">Loading metrics...</div>;
 
-  const pieData = data.topSelling.map(item => ({ name: item.name, value: item.count }));
+  const pieData = useMemo(() => {
+    if (!data?.topSelling) return [];
+    return data.topSelling.map(item => ({ 
+      name: item.name || 'Unknown', 
+      value: Number(item.count) || 0 
+    }));
+  }, [data]);
 
   const stats = useMemo(() => {
-    if (!sales.length) return { totalRevenue: 0, avgValue: 0, estimatedTax: 0, netRevenue: 0 };
+    if (!sales || !sales.length) return { totalRevenue: 0, avgValue: 0, estimatedTax: 0, netRevenue: 0 };
     const totalRevenue = sales.reduce((acc, s) => acc + (Number(s.total_amount) || 0), 0);
     const avgValue = totalRevenue / sales.length;
     const estimatedTax = totalRevenue * 0.12; 
     const netRevenue = totalRevenue - estimatedTax;
     return { totalRevenue, avgValue, estimatedTax, netRevenue };
   }, [sales]);
+
+  const formatDate = (dateStr: string) => {
+    try {
+      // SQLite datetime('now') returns "YYYY-MM-DD HH:MM:SS". 
+      // Replace space with T to make it a standard ISO string for better reliability.
+      const d = new Date(dateStr.replace(' ', 'T'));
+      return isNaN(d.getTime()) ? 'Invalid Date' : d.toLocaleDateString();
+    } catch {
+      return 'N/A';
+    }
+  };
+
+  const formatTime = (dateStr: string) => {
+    try {
+      const d = new Date(dateStr.replace(' ', 'T'));
+      return isNaN(d.getTime()) ? '' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return '';
+    }
+  };
 
   return (
     <div className="space-y-8 pb-10">
@@ -190,16 +216,16 @@ export default function AnalyticsPage() {
                   <td className="px-8 py-5">
                     <div className="flex items-center gap-3">
                        <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 font-black text-xs uppercase shadow-sm border border-emerald-100">
-                         {sale.customer_name[0]}
+                         {sale.customer_name?.[0] || 'C'}
                        </div>
                        <div>
-                         <p className="font-bold text-sm text-slate-800 group-hover:text-emerald-600 transition-colors">{sale.customer_name}</p>
-                         <p className="text-[10px] font-bold text-slate-400 font-mono tracking-tighter uppercase">+91 {sale.customer_phone}</p>
+                         <p className="font-bold text-sm text-slate-800 group-hover:text-emerald-600 transition-colors">{sale.customer_name || 'Walk-in Customer'}</p>
+                         <p className="text-[10px] font-bold text-slate-400 font-mono tracking-tighter uppercase">+91 {sale.customer_phone || 'N/A'}</p>
                        </div>
                     </div>
                   </td>
                   <td className="px-8 py-5">
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{new Date(sale.timestamp).toLocaleDateString()} • {new Date(sale.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{formatDate(sale.timestamp)} • {formatTime(sale.timestamp)}</p>
                   </td>
                   <td className="px-8 py-5">
                     <span className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[0.1em] border ${

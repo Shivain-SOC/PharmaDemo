@@ -133,7 +133,7 @@ export default function Dashboard() {
                   <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider font-mono">{item.count} units</p>
                 </div>
                 <div className="w-20 bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${(item.count / data.topSelling[0].count) * 100}%` }}></div>
+                  <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${(item.count / (data.topSelling[0]?.count || 1)) * 100}%` }}></div>
                 </div>
               </div>
             ))}

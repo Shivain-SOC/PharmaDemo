@@ -123,38 +123,43 @@ async function startServer() {
 
   // 4. Analytics API
   app.get('/api/analytics', authenticateToken, async (req, res) => {
-    const daySales = await db.get(`SELECT SUM(total_amount) as total FROM sales WHERE date(timestamp) = date('now')`);
-    const weekSales = await db.get(`SELECT SUM(total_amount) as total FROM sales WHERE date(timestamp) >= date('now', '-7 days')`);
-    const monthSales = await db.get(`SELECT SUM(total_amount) as total FROM sales WHERE date(timestamp) >= date('now', '-30 days')`);
-    
-    const chartData = await db.all(`
-      SELECT date(timestamp) as date, SUM(total_amount) as amount 
-      FROM sales 
-      WHERE date(timestamp) >= date('now', '-30 days')
-      GROUP BY date(timestamp)
-      ORDER BY date ASC
-    `);
+    try {
+      const daySales = await db.get(`SELECT COALESCE(SUM(total_amount), 0) as total FROM sales WHERE date(timestamp) = date('now')`);
+      const weekSales = await db.get(`SELECT COALESCE(SUM(total_amount), 0) as total FROM sales WHERE date(timestamp) >= date('now', '-7 days')`);
+      const monthSales = await db.get(`SELECT COALESCE(SUM(total_amount), 0) as total FROM sales WHERE date(timestamp) >= date('now', '-30 days')`);
+      
+      const chartData = await db.all(`
+        SELECT date(timestamp) as date, COALESCE(SUM(total_amount), 0) as amount 
+        FROM sales 
+        WHERE date(timestamp) >= date('now', '-30 days')
+        GROUP BY date(timestamp)
+        ORDER BY date ASC
+      `);
 
-    const topSelling = await db.all(`
-      SELECT m.name, SUM(si.quantity) as count
-      FROM sale_items si
-      JOIN medicines m ON si.medicine_id = m.id
-      GROUP BY m.id
-      ORDER BY count DESC
-      LIMIT 5
-    `);
+      const topSelling = await db.all(`
+        SELECT m.name, COALESCE(SUM(si.quantity), 0) as count
+        FROM sale_items si
+        JOIN medicines m ON si.medicine_id = m.id
+        GROUP BY m.id
+        ORDER BY count DESC
+        LIMIT 5
+      `);
 
-    const lowStock = await db.all(`SELECT * FROM medicines WHERE stock <= 10`);
+      const lowStock = await db.all(`SELECT * FROM medicines WHERE stock <= 10`);
 
-    res.json({
-      daily: daySales?.total || 0,
-      weekly: weekSales?.total || 0,
-      monthly: monthSales?.total || 0,
-      chartData,
-      topSelling,
-      lowStock,
-      totalInventory: (await db.get('SELECT COUNT(*) as count FROM medicines'))?.count || 0
-    });
+      res.json({
+        daily: Number(daySales?.total) || 0,
+        weekly: Number(weekSales?.total) || 0,
+        monthly: Number(monthSales?.total) || 0,
+        chartData: chartData.map(d => ({ ...d, amount: Number(d.amount) })),
+        topSelling: topSelling.map(t => ({ ...t, count: Number(t.count) })),
+        lowStock,
+        totalInventory: (await db.get('SELECT COUNT(*) as count FROM medicines'))?.count || 0
+      });
+    } catch (error) {
+      console.error('Analytics Error:', error);
+      res.status(500).json({ error: 'Failed to aggregate analytics' });
+    }
   });
 
   app.get('/api/sales', authenticateToken, async (req, res) => {
