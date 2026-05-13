@@ -7,8 +7,10 @@ let db: Database | null = null;
 export async function getDb() {
   if (db) return db;
 
+  const dbPath = process.env.DATABASE_URL || path.join(process.cwd(), 'pharmacy.db');
+  
   db = await open({
-    filename: path.join(process.cwd(), 'pharmacy.db'),
+    filename: dbPath,
     driver: sqlite3.Database
   });
 
