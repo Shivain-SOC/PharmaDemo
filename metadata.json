@@ -1,0 +1,6 @@
+{
+  "name": "PharmaSync SaaS",
+  "description": "Premium pharmacy management system with inventory tracking, automated billing, and detailed analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["Dashboard", "Inventory Management", "Billing System", "Analytics"]
+}
