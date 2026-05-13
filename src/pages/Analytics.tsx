@@ -29,39 +29,89 @@ export default function AnalyticsPage() {
       api.billing.listSales()
     ])
     .then(([analyticsData, salesData]) => {
+      console.log('Analytics Loaded:', { analyticsData, salesData });
       setData(analyticsData);
       setSales(salesData);
     })
     .catch(err => {
-      console.error(err);
-      setError('Failed to load analytics data');
+      console.error('Analytics Loading Error:', err);
+      setError('Failed to load analytics data. Please check your connection.');
     });
   }, []);
 
-  if (error) return <div className="flex items-center justify-center h-full text-rose-500 font-bold">{error}</div>;
-  if (!data) return <div className="flex items-center justify-center h-full text-slate-400">Loading metrics...</div>;
+  if (error) return (
+    <div className="flex flex-col items-center justify-center h-full gap-4">
+      <p className="text-rose-500 font-bold text-lg">{error}</p>
+      <button 
+        onClick={() => window.location.reload()}
+        className="px-6 py-2 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors"
+      >
+        Retry Loading
+      </button>
+    </div>
+  );
+
+  if (!data) return (
+    <div className="flex flex-col items-center justify-center h-full gap-3">
+      <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+      <p className="text-slate-400 font-bold">Synchronizing Intelligence...</p>
+    </div>
+  );
 
   const pieData = useMemo(() => {
-    if (!data?.topSelling) return [];
-    return data.topSelling.map(item => ({ 
-      name: item.name || 'Unknown', 
-      value: Number(item.count) || 0 
-    }));
+    try {
+      if (!data?.topSelling || !Array.isArray(data.topSelling)) return [];
+      return data.topSelling
+        .filter(item => item && typeof item === 'object')
+        .map(item => ({ 
+          name: item.name || 'Unknown Item', 
+          value: Math.max(0, Number(item.count) || 0)
+        }));
+    } catch (e) {
+      console.error('PieData error:', e);
+      return [];
+    }
+  }, [data]);
+
+  const chartData = useMemo(() => {
+    try {
+      if (!data?.chartData || !Array.isArray(data.chartData)) return [];
+      return data.chartData
+        .filter(item => item && typeof item === 'object')
+        .map(item => ({
+          date: item.date || 'N/A',
+          amount: Math.max(0, Number(item.amount) || 0)
+        }));
+    } catch (e) {
+      console.error('ChartData error:', e);
+      return [];
+    }
   }, [data]);
 
   const stats = useMemo(() => {
-    if (!sales || !sales.length) return { totalRevenue: 0, avgValue: 0, estimatedTax: 0, netRevenue: 0 };
-    const totalRevenue = sales.reduce((acc, s) => acc + (Number(s.total_amount) || 0), 0);
-    const avgValue = totalRevenue / sales.length;
-    const estimatedTax = totalRevenue * 0.12; 
-    const netRevenue = totalRevenue - estimatedTax;
-    return { totalRevenue, avgValue, estimatedTax, netRevenue };
+    try {
+      if (!sales || !Array.isArray(sales) || sales.length === 0) {
+        return { totalRevenue: 0, avgValue: 0, estimatedTax: 0, netRevenue: 0 };
+      }
+      const totalRevenue = sales.reduce((acc, s) => acc + (Number(s?.total_amount) || 0), 0);
+      const avgValue = totalRevenue / sales.length;
+      const estimatedTax = totalRevenue * 0.12; 
+      const netRevenue = totalRevenue - estimatedTax;
+      return { 
+        totalRevenue: Math.max(0, totalRevenue), 
+        avgValue: Math.max(0, avgValue), 
+        estimatedTax: Math.max(0, estimatedTax), 
+        netRevenue: Math.max(0, netRevenue) 
+      };
+    } catch (e) {
+      console.error('Stats recalculation error:', e);
+      return { totalRevenue: 0, avgValue: 0, estimatedTax: 0, netRevenue: 0 };
+    }
   }, [sales]);
 
-  const formatDate = (dateStr: string) => {
+  const formatDate = (dateStr: string | null | undefined) => {
+    if (!dateStr) return 'N/A';
     try {
-      // SQLite datetime('now') returns "YYYY-MM-DD HH:MM:SS". 
-      // Replace space with T to make it a standard ISO string for better reliability.
       const d = new Date(dateStr.replace(' ', 'T'));
       return isNaN(d.getTime()) ? 'Invalid Date' : d.toLocaleDateString();
     } catch {
@@ -69,7 +119,8 @@ export default function AnalyticsPage() {
     }
   };
 
-  const formatTime = (dateStr: string) => {
+  const formatTime = (dateStr: string | null | undefined) => {
+    if (!dateStr) return '';
     try {
       const d = new Date(dateStr.replace(' ', 'T'));
       return isNaN(d.getTime()) ? '' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -124,7 +175,7 @@ export default function AnalyticsPage() {
           </div>
           <div className="h-[350px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data.chartData}>
+              <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748b', fontWeight: 'bold'}} />
                 <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748b', fontWeight: 'bold'}} />
@@ -208,42 +259,44 @@ export default function AnalyticsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {sales.map((sale) => (
-                <tr key={sale.id} className="hover:bg-slate-50/50 transition-colors group">
+              {sales && Array.isArray(sales) && sales.map((sale) => (
+                <tr key={sale?.id} className="hover:bg-slate-50/50 transition-colors group">
                   <td className="px-8 py-5">
-                    <span className="bg-slate-100 px-3 py-1 rounded-lg text-[10px] font-mono font-black tracking-widest text-slate-500 border border-slate-200">#{sale.id.toString().padStart(5, '0')}</span>
+                    <span className="bg-slate-100 px-3 py-1 rounded-lg text-[10px] font-mono font-black tracking-widest text-slate-500 border border-slate-200">
+                      #{sale?.id?.toString()?.padStart(5, '0') || '00000'}
+                    </span>
                   </td>
                   <td className="px-8 py-5">
                     <div className="flex items-center gap-3">
                        <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 font-black text-xs uppercase shadow-sm border border-emerald-100">
-                         {sale.customer_name?.[0] || 'C'}
+                         {sale?.customer_name?.[0] || 'C'}
                        </div>
                        <div>
-                         <p className="font-bold text-sm text-slate-800 group-hover:text-emerald-600 transition-colors">{sale.customer_name || 'Walk-in Customer'}</p>
-                         <p className="text-[10px] font-bold text-slate-400 font-mono tracking-tighter uppercase">+91 {sale.customer_phone || 'N/A'}</p>
+                         <p className="font-bold text-sm text-slate-800 group-hover:text-emerald-600 transition-colors">{sale?.customer_name || 'Walk-in Customer'}</p>
+                         <p className="text-[10px] font-bold text-slate-400 font-mono tracking-tighter uppercase">+91 {sale?.customer_phone || 'N/A'}</p>
                        </div>
                     </div>
                   </td>
                   <td className="px-8 py-5">
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{formatDate(sale.timestamp)} • {formatTime(sale.timestamp)}</p>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{formatDate(sale?.timestamp)} • {formatTime(sale?.timestamp)}</p>
                   </td>
                   <td className="px-8 py-5">
                     <span className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[0.1em] border ${
-                      sale.payment_method === 'UPI' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
-                      sale.payment_method === 'Card' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 
+                      sale?.payment_method === 'UPI' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
+                      sale?.payment_method === 'Card' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 
                       'bg-amber-50 text-amber-600 border-amber-100'
                     }`}>
-                      {sale.payment_method}
+                      {sale?.payment_method || 'Cash'}
                     </span>
                   </td>
                   <td className="px-8 py-5 text-right">
-                    <p className="font-black text-lg text-slate-900 tracking-tight">₹{Number(sale.total_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                    <p className="font-black text-lg text-slate-900 tracking-tight">₹{Number(sale?.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {sales.length === 0 && (
+          {(!sales || sales.length === 0) && (
             <div className="p-20 text-center text-slate-300">
                <Activity className="w-12 h-12 mx-auto mb-4 opacity-30" />
                <p className="text-xs font-black uppercase tracking-[0.2em]">No transactional data available</p>
