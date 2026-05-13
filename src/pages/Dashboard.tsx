@@ -40,6 +40,7 @@ const StatCard = ({ title, value, icon: Icon, trend, color }: any) => (
 export default function Dashboard() {
   const [data, setData] = useState<Analytics | null>(null);
   const [medicines, setMedicines] = useState<Medicine[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -48,9 +49,13 @@ export default function Dashboard() {
     ]).then(([analyticsData, inventoryData]) => {
       setData(analyticsData);
       setMedicines(inventoryData);
+    }).catch(err => {
+      console.error(err);
+      setError('Failed to load dashboard data');
     });
   }, []);
 
+  if (error) return <div className="flex items-center justify-center h-full text-rose-500 font-bold">{error}</div>;
   if (!data) return <div className="flex items-center justify-center h-full text-slate-400">Loading metrics...</div>;
 
   const expiringSoon = medicines.filter(m => {

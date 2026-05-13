@@ -21,20 +21,32 @@ const COLORS = ['#000000', '#2563eb', '#8b5cf6', '#ec4899', '#f97316'];
 export default function AnalyticsPage() {
   const [data, setData] = useState<Analytics | null>(null);
   const [sales, setSales] = useState<Sale[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.analytics.get().then(setData);
-    api.billing.listSales().then(setSales);
+    Promise.all([
+      api.analytics.get(),
+      api.billing.listSales()
+    ])
+    .then(([analyticsData, salesData]) => {
+      setData(analyticsData);
+      setSales(salesData);
+    })
+    .catch(err => {
+      console.error(err);
+      setError('Failed to load analytics data');
+    });
   }, []);
 
+  if (error) return <div className="flex items-center justify-center h-full text-rose-500 font-bold">{error}</div>;
   if (!data) return <div className="flex items-center justify-center h-full text-slate-400">Loading metrics...</div>;
 
   const pieData = data.topSelling.map(item => ({ name: item.name, value: item.count }));
 
   const stats = useMemo(() => {
-    const totalRevenue = sales.reduce((acc, s) => acc + s.total_amount, 0);
-    const avgValue = sales.length > 0 ? totalRevenue / sales.length : 0;
-    // Realistically tax is calculated per item, but here we'll estimate 12% average tax for the summary
+    if (!sales.length) return { totalRevenue: 0, avgValue: 0, estimatedTax: 0, netRevenue: 0 };
+    const totalRevenue = sales.reduce((acc, s) => acc + (Number(s.total_amount) || 0), 0);
+    const avgValue = totalRevenue / sales.length;
     const estimatedTax = totalRevenue * 0.12; 
     const netRevenue = totalRevenue - estimatedTax;
     return { totalRevenue, avgValue, estimatedTax, netRevenue };
@@ -56,19 +68,19 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Collections</p>
-          <p className="text-2xl font-black text-slate-900">₹{stats.totalRevenue.toLocaleString()}</p>
+          <p className="text-2xl font-black text-slate-900">₹{Math.round(stats.totalRevenue).toLocaleString()}</p>
         </div>
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Estimated GST</p>
-          <p className="text-2xl font-black text-emerald-600">₹{stats.estimatedTax.toLocaleString()}</p>
+          <p className="text-2xl font-black text-emerald-600">₹{Math.round(stats.estimatedTax).toLocaleString()}</p>
         </div>
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Net Sales</p>
-          <p className="text-2xl font-black text-slate-900">₹{stats.netRevenue.toLocaleString()}</p>
+          <p className="text-2xl font-black text-slate-900">₹{Math.round(stats.netRevenue).toLocaleString()}</p>
         </div>
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Avg. Transaction</p>
-          <p className="text-2xl font-black text-indigo-600">₹{stats.avgValue.toFixed(0)}</p>
+          <p className="text-2xl font-black text-indigo-600">₹{Math.round(stats.avgValue).toLocaleString()}</p>
         </div>
       </div>
 
@@ -110,32 +122,34 @@ export default function AnalyticsPage() {
                <Filter className="w-5 h-5 text-slate-400" />
              </button>
           </div>
-          <div className="h-[350px] w-full flex items-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={80}
-                  outerRadius={120}
-                  paddingAngle={8}
-                  dataKey="value"
-                >
-                  {pieData.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={['#059669', '#10b981', '#34d399', '#6ee7b7', '#a7f3d0'][index % 5]} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', fontSize: '12px' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="space-y-3 pr-10 hidden md:block">
+          <div className="h-[350px] w-full grid grid-cols-1 md:grid-cols-2 items-center gap-4">
+            <div className="h-full w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={80}
+                    outerRadius={120}
+                    paddingAngle={8}
+                    dataKey="value"
+                  >
+                    {pieData.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={['#059669', '#10b981', '#34d399', '#6ee7b7', '#a7f3d0'][index % 5]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', fontSize: '12px' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="space-y-3 hidden md:block">
                {pieData.slice(0, 5).map((entry, index) => (
                  <div key={entry.name} className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: ['#059669', '#10b981', '#34d399', '#6ee7b7', '#a7f3d0'][index % 5] }}></div>
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest truncate">{entry.name}</span>
+                    <div className="w-3 h-3 rounded-full shadow-sm flex-shrink-0" style={{ backgroundColor: ['#059669', '#10b981', '#34d399', '#6ee7b7', '#a7f3d0'][index % 5] }}></div>
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest truncate">{entry.name}</p>
                  </div>
                ))}
             </div>
@@ -197,7 +211,7 @@ export default function AnalyticsPage() {
                     </span>
                   </td>
                   <td className="px-8 py-5 text-right">
-                    <p className="font-black text-lg text-slate-900 tracking-tight">₹{sale.total_amount.toFixed(2).toLocaleString()}</p>
+                    <p className="font-black text-lg text-slate-900 tracking-tight">₹{Number(sale.total_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                   </td>
                 </tr>
               ))}
