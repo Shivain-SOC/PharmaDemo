@@ -164,7 +164,33 @@ export default function Billing() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 min-h-full pb-10">
+    <>
+      {/* Quick Checkout Bar (Mobile Only) */}
+      {cart.length > 0 && !lastInvoice && (
+        <motion.div 
+          initial={{ y: 100 }}
+          animate={{ y: 0 }}
+          className="lg:hidden fixed bottom-6 left-6 right-6 z-40"
+        >
+          <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-2xl flex items-center justify-between border border-white/10 backdrop-blur-lg">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Total Amount</p>
+              <p className="text-2xl font-black">₹{totals.total.toFixed(2)}</p>
+            </div>
+            <button 
+              onClick={() => {
+                const checkoutPanel = document.getElementById('checkout-panel');
+                checkoutPanel?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="bg-emerald-500 text-slate-900 px-6 py-3 rounded-2xl font-black text-sm hover:bg-emerald-400 transition-colors shadow-lg shadow-emerald-500/20"
+            >
+              CHECKOUT
+            </button>
+          </div>
+        </motion.div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 min-h-full pb-10">
       {/* Left Pane: Item Selection */}
       <div className="lg:col-span-2 space-y-8">
         <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm relative overflow-visible">
@@ -266,7 +292,7 @@ export default function Billing() {
       </div>
 
       {/* Right Pane: Checkout */}
-      <div className="space-y-8">
+      <div className="space-y-8" id="checkout-panel">
         <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm sticky top-24">
           <div className="flex justify-between items-start mb-8">
             <h3 className="text-xl font-bold text-slate-800">Checkout Panel</h3>
@@ -465,5 +491,6 @@ export default function Billing() {
         )}
       </AnimatePresence>
     </div>
+    </>
   );
 }
