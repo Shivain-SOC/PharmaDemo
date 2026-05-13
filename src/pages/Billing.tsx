@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { Link } from 'react-router-dom';
 import { 
   ShoppingCart, 
   Search, 
@@ -15,7 +16,8 @@ import {
   Printer,
   Share2,
   X,
-  Receipt
+  Receipt,
+  History
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { Medicine } from '../types';
@@ -465,7 +467,7 @@ export default function Billing() {
                 </div>
               </div>
 
-              <div className="p-10 bg-slate-50 flex flex-col gap-3 border-t border-slate-100">
+              <div className="p-10 bg-slate-50 flex flex-col gap-3 border-t border-slate-100 text-center">
                 <div className="flex gap-4">
                   <button className="flex-1 bg-white border border-slate-200 text-slate-800 py-5 rounded-2xl font-black flex items-center justify-center gap-3 hover:bg-slate-900 hover:text-white transition-all shadow-sm">
                     <Printer className="w-5 h-5" />
@@ -479,6 +481,15 @@ export default function Billing() {
                     WHATSAPP
                   </button>
                 </div>
+                
+                <Link 
+                  to="/daily-bills" 
+                  className="flex items-center justify-center gap-2 py-4 bg-slate-100 rounded-xl text-slate-600 font-bold hover:bg-slate-200 transition-all mt-2"
+                >
+                  <History className="w-4 h-4" />
+                  VIEW TODAY'S RECORDS
+                </Link>
+
                 <button 
                   onClick={clearSession}
                   className="w-full py-4 rounded-xl text-slate-400 font-bold uppercase tracking-[0.2em] text-[10px] hover:text-emerald-600 transition-colors"

@@ -58,6 +58,7 @@ import {
   ArrowUpRight,
   TrendingUp,
   AlertTriangle,
+  History,
   User as UserIcon,
   ShoppingCart
 } from 'lucide-react';
@@ -71,6 +72,7 @@ import Dashboard from './pages/Dashboard';
 import Inventory from './pages/Inventory';
 import Billing from './pages/Billing';
 import AnalyticsPage from './pages/Analytics';
+import DailyBills from './pages/DailyBills';
 import Login from './pages/Login';
 
 const SidebarLink = ({ to, icon: Icon, label, active }: any) => (
@@ -112,6 +114,7 @@ const MainLayout = ({ user, children, onLogout }: any) => {
           <SidebarLink to="/dashboard" icon={LayoutDashboard} label="Dashboard" active={location.pathname === '/dashboard'} />
           <SidebarLink to="/inventory" icon={Package} label="Inventory" active={location.pathname === '/inventory'} />
           <SidebarLink to="/billing" icon={ShoppingCart} label="New Bill" active={location.pathname === '/billing'} />
+          <SidebarLink to="/daily-bills" icon={History} label="Daily Records" active={location.pathname === '/daily-bills'} />
           <SidebarLink to="/analytics" icon={BarChart3} label="Analytics" active={location.pathname === '/analytics'} />
         </nav>
 
@@ -214,6 +217,7 @@ export default function App() {
                     <Route path="dashboard" element={<Dashboard />} />
                     <Route path="inventory" element={<Inventory />} />
                     <Route path="billing" element={<Billing />} />
+                    <Route path="daily-bills" element={<DailyBills />} />
                     <Route path="analytics" element={<AnalyticsPage />} />
                     <Route path="*" element={<Navigate to="/dashboard" />} />
                   </Routes>
