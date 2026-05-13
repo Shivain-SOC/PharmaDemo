@@ -63,8 +63,8 @@ export default function AnalyticsPage() {
       if (!data?.topSelling || !Array.isArray(data.topSelling)) return [];
       return data.topSelling
         .filter(item => item && typeof item === 'object')
-        .map(item => ({ 
-          name: item.name || 'Unknown Item', 
+        .map((item, idx) => ({ 
+          name: item.name || `Item ${idx}`, 
           value: Math.max(0, Number(item.count) || 0)
         }));
     } catch (e) {
@@ -79,7 +79,7 @@ export default function AnalyticsPage() {
       return data.chartData
         .filter(item => item && typeof item === 'object')
         .map(item => ({
-          date: item.date || 'N/A',
+          date: String(item.date || ''),
           amount: Math.max(0, Number(item.amount) || 0)
         }));
     } catch (e) {
@@ -94,7 +94,7 @@ export default function AnalyticsPage() {
         return { totalRevenue: 0, avgValue: 0, estimatedTax: 0, netRevenue: 0 };
       }
       const totalRevenue = sales.reduce((acc, s) => acc + (Number(s?.total_amount) || 0), 0);
-      const avgValue = totalRevenue / sales.length;
+      const avgValue = totalRevenue / Math.max(1, sales.length);
       const estimatedTax = totalRevenue * 0.12; 
       const netRevenue = totalRevenue - estimatedTax;
       return { 
@@ -177,8 +177,8 @@ export default function AnalyticsPage() {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748b', fontWeight: 'bold'}} />
-                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748b', fontWeight: 'bold'}} />
+                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748b', fontWeight: 700}} />
+                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748b', fontWeight: 700}} />
                 <Tooltip 
                   cursor={{fill: '#f8fafc'}}
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', fontSize: '12px' }}
@@ -224,10 +224,10 @@ export default function AnalyticsPage() {
             </div>
             <div className="space-y-3 hidden md:block">
                {pieData.slice(0, 5).map((entry, index) => (
-                 <div key={entry.name} className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full shadow-sm flex-shrink-0" style={{ backgroundColor: ['#059669', '#10b981', '#34d399', '#6ee7b7', '#a7f3d0'][index % 5] }}></div>
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest truncate">{entry.name}</p>
-                 </div>
+                  <div key={`${entry.name}-${index}`} className="flex items-center gap-3">
+                     <div className="w-3 h-3 rounded-full shadow-sm flex-shrink-0" style={{ backgroundColor: ['#059669', '#10b981', '#34d399', '#6ee7b7', '#a7f3d0'][index % 5] }}></div>
+                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest truncate">{entry.name}</p>
+                  </div>
                ))}
             </div>
           </div>
