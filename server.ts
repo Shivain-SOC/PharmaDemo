@@ -123,6 +123,7 @@ async function startServer() {
 
   // 4. Analytics API
   app.get('/api/analytics', authenticateToken, async (req, res) => {
+    console.log('GET /api/analytics - Start');
     try {
       const daySales = await db.get(`SELECT COALESCE(SUM(total_amount), 0) as total FROM sales WHERE date(timestamp) = date('now')`);
       const weekSales = await db.get(`SELECT COALESCE(SUM(total_amount), 0) as total FROM sales WHERE date(timestamp) >= date('now', '-7 days')`);
@@ -146,16 +147,20 @@ async function startServer() {
       `);
 
       const lowStock = await db.all(`SELECT * FROM medicines WHERE stock <= 10`);
+      const invCount = await db.get('SELECT COUNT(*) as count FROM medicines');
 
-      res.json({
+      const payload = {
         daily: Number(daySales?.total) || 0,
         weekly: Number(weekSales?.total) || 0,
         monthly: Number(monthSales?.total) || 0,
-        chartData: chartData.map(d => ({ ...d, amount: Number(d.amount) })),
-        topSelling: topSelling.map(t => ({ ...t, count: Number(t.count) })),
-        lowStock,
-        totalInventory: (await db.get('SELECT COUNT(*) as count FROM medicines'))?.count || 0
-      });
+        chartData: (chartData || []).map(d => ({ ...d, amount: Number(d.amount) })),
+        topSelling: (topSelling || []).map(t => ({ ...t, count: Number(t.count) })),
+        lowStock: lowStock || [],
+        totalInventory: invCount?.count || 0
+      };
+      
+      console.log('GET /api/analytics - Success');
+      res.json(payload);
     } catch (error) {
       console.error('Analytics Error:', error);
       res.status(500).json({ error: 'Failed to aggregate analytics' });

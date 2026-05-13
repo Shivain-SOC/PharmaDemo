@@ -46,10 +46,14 @@ for (let i = 22; i <= 50; i++) {
 export async function seed() {
   const db = await getDb();
   
-  // Clear existing
-  await db.exec(`DELETE FROM sale_items; DELETE FROM sales; DELETE FROM medicines; DELETE FROM users;`);
+  // Only seed if empty
+  const userCount = await db.get('SELECT COUNT(*) as count FROM users');
+  if (userCount && userCount.count > 0) {
+    console.log('Database already has data, skipping seed.');
+    return;
+  }
 
-  // Admin user
+  console.log('Seeding database...');
   const hashedPassword = await bcrypt.hash('admin123', 10);
   await db.run(`INSERT INTO users (username, password, role) VALUES (?, ?, ?)`, ['admin', hashedPassword, 'admin']);
 

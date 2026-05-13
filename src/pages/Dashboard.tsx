@@ -14,7 +14,7 @@ import {
 import { api } from '../lib/api';
 import { Analytics, Medicine } from '../types';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Link } from 'react-router';
+import { Link } from 'react-router-dom';
 
 const StatCard = ({ title, value, icon: Icon, trend, color }: any) => (
   <motion.div 

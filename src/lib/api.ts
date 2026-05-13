@@ -11,7 +11,12 @@ export const api = {
         'Content-Type': 'application/json',
         ...options.headers,
       },
+    }).catch(err => {
+      console.error(`Fetch Error [${url}]:`, err);
+      throw err;
     });
+
+    console.log(`API [${url}] Status: ${res.status}`);
     if (!res.ok) {
       const error = await res.json().catch(() => ({ error: 'Unknown error' }));
       throw new Error(error.error || 'Request failed');
