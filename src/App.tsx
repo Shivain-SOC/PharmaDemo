@@ -141,8 +141,8 @@ const MainLayout = ({ user, children, onLogout }: any) => {
       {/* Sidebar */}
       <aside 
         className={`${
-          isSidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full w-0 lg:w-0'
-        } fixed lg:relative bg-white border-r border-slate-200 flex flex-col h-full transition-all duration-500 ease-in-out z-50`}
+          isSidebarOpen ? 'translate-x-0 w-64 shadow-2xl lg:shadow-none' : '-translate-x-full w-0 lg:w-0'
+        } fixed lg:relative bg-white border-r border-slate-200 flex flex-col h-full transition-all duration-500 ease-in-out z-50 overflow-hidden`}
       >
         <div className="p-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -195,17 +195,17 @@ const MainLayout = ({ user, children, onLogout }: any) => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden relative">
-        <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-6 lg:px-10 sticky top-0 z-40">
-          <div className="flex items-center gap-4">
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+        <header className="h-16 lg:h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-10 sticky top-0 z-40">
+          <div className="flex items-center gap-2 lg:gap-4 overflow-hidden">
             <button 
               onClick={() => setSidebarOpen(!isSidebarOpen)} 
-              className="p-3 bg-slate-50 border border-slate-100 hover:bg-slate-100 hover:border-slate-200 rounded-2xl transition-all shadow-sm"
+              className="p-2 lg:p-3 bg-slate-50 border border-slate-100 hover:bg-slate-100 hover:border-slate-200 rounded-xl lg:rounded-2xl transition-all shadow-sm"
             >
-              <Menu className="w-5 h-5 text-slate-600" />
+              <Menu className="w-4 h-4 lg:w-5 h-5 text-slate-600" />
             </button>
-            <div className="h-8 w-px bg-slate-200 mx-2 hidden lg:block" />
-            <h1 className="text-xl font-black tracking-tighter text-slate-900 uppercase">
+            <div className="h-6 lg:h-8 w-px bg-slate-200 mx-1 lg:mx-2 hidden sm:block" />
+            <h1 className="text-sm lg:text-xl font-black tracking-tighter text-slate-900 uppercase truncate">
               {location.pathname.substring(1).replace('-', ' ') || 'Overview'}
             </h1>
           </div>
