@@ -17,6 +17,14 @@ export const api = {
     });
 
     console.log(`API [${url}] Status: ${res.status}`);
+    if (res.status === 401) {
+      // Session expired or unauthorized
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
+      throw new Error('Authentication expired. Please login again.');
+    }
     if (!res.ok) {
       const error = await res.json().catch(() => ({ error: 'Unknown error' }));
       throw new Error(error.error || 'Request failed');

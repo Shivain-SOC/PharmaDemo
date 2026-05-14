@@ -18,6 +18,8 @@ import { toast } from 'sonner';
 
 export default function Inventory() {
   const [medicines, setMedicines] = useState<Medicine[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('All');
   const [isModalOpen, setModalOpen] = useState(false);
@@ -27,7 +29,43 @@ export default function Inventory() {
     fetchMeds();
   }, []);
 
-  const fetchMeds = () => api.inventory.list().then(setMedicines);
+  const fetchMeds = () => {
+    setLoading(true);
+    setError(null);
+    api.inventory.list()
+      .then(data => {
+        setMedicines(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setError('Connection to inventory records failed.');
+        setLoading(false);
+      });
+  };
+
+  if (error) return (
+    <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 bg-white rounded-3xl border border-slate-200">
+      <AlertTriangle className="w-12 h-12 text-rose-500" />
+      <div className="text-center">
+        <p className="text-rose-600 font-bold text-lg">Inventory Sync Failure</p>
+        <p className="text-slate-500 text-sm mt-1">{error}</p>
+      </div>
+      <button 
+        onClick={fetchMeds}
+        className="px-8 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all shadow-lg"
+      >
+        Retry Fetch
+      </button>
+    </div>
+  );
+
+  if (loading && medicines.length === 0) return (
+    <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+      <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+      <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Accessing Secure Vault...</p>
+    </div>
+  );
 
   const filteredMeds = medicines.filter(m => {
     const matchesSearch = m.name.toLowerCase().includes(searchTerm.toLowerCase()) || m.category.toLowerCase().includes(searchTerm.toLowerCase());

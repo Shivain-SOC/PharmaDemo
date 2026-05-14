@@ -55,7 +55,21 @@ export default function Dashboard() {
     });
   }, []);
 
-  if (error) return <div className="flex items-center justify-center h-full text-rose-500 font-bold">{error}</div>;
+  if (error) return (
+    <div className="flex flex-col items-center justify-center h-[400px] gap-4 bg-white rounded-3xl border border-slate-200 m-8">
+      <AlertTriangle className="w-12 h-12 text-rose-500" />
+      <div className="text-center">
+        <p className="text-rose-600 font-bold text-lg">Communication Error</p>
+        <p className="text-slate-500 text-sm mt-1">{error}</p>
+      </div>
+      <button 
+        onClick={() => window.location.reload()}
+        className="px-6 py-2 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all uppercase tracking-widest text-xs"
+      >
+        Retry Connection
+      </button>
+    </div>
+  );
   if (!data) return <div className="flex items-center justify-center h-full text-slate-400">Loading metrics...</div>;
 
   const expiringSoon = medicines.filter(m => {
